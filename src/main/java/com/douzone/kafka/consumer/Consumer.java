@@ -1,59 +1,69 @@
 package com.douzone.kafka.consumer;
 
-import com.douzone.kafka.model.MessageModel;
-import com.douzone.kafka.producer.CallbackProducer;
-import com.douzone.kafka.producer.Producer;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.douzone.kafka.model.Result;
+import com.douzone.kafka.model.Student;
 import lombok.RequiredArgsConstructor;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Component
 @RequiredArgsConstructor
-public class DBConsumer {
+public class Consumer {
 
-    private final ObjectMapper mapper = new ObjectMapper();
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    private final Producer producer;
-    private final CallbackProducer callbackProducer;
-    private final Logger logger = LoggerFactory.getLogger(DBConsumer.class);
-//    private final com.douzone.comet.service.oss.integration.adapter.database.DatabaseConsumerService databaseConsumerService;
+    @KafkaListener(topics = "request", groupId = "group", containerFactory = "studentListenerContainerFactory")
+    @SendTo
+    public Result handle(@Payload Student student) {
+        double total = ThreadLocalRandom.current().nextDouble(2.5, 9.9);
 
-    @KafkaListener(groupId = "DMS", topics = "topic")
-    public void consume(ConsumerRecord<String, String> record) {
-        MessageModel msg = null;
         try {
-            msg = mapper.readValue(record.value(), new TypeReference<MessageModel>() {
-            });
+            logger.info(dateFormat.format(new Date()) + "############## start " + student.getName() + total);
+            Thread.sleep(3000);
+            logger.info(dateFormat.format(new Date()) + "############## end " + student.getName());
 
-            logger.info("[consume 수신] model : " + msg);
-
-        } catch (JsonProcessingException e) {
-            logger.error(e.getMessage());
-        }
-        try {
-            Thread.sleep(5000);
-        } catch (Exception e) {
-            logger.error(e.getMessage());
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
 
-        if (msg.getHasNext() > 0) {
-            msg.setHasNext(msg.getHasNext() - 1);
-            msg.setDeptNm(msg.getDeptNm() + " " + msg.getHasNext());
-            callbackProducer.send("topic", msg);
-        } else {
-            for (int i = 0; i < 5; i++) {
-                logger.info("=====================================================================");
-            }
-        }
+        String result = (total / (double) 100) + "";
+
+        return Result.builder().result((total > 5.0) ? "Pass" : "Fail")
+                .percentage(result)
+                .name("리턴값")
+                .build();
     }
+}
+
+//    @KafkaListener(groupId = "DMS", topics = "topic", containerFactory = "kafkaListenerContainerFactory")
+//    public void consume(ConsumerRecord<String, String> record, Acknowledgment acknowledgment) {
+//        MessageModel msg = null;
+//        try {
+//            msg = mapper.readValue(record.value(), new TypeReference<MessageModel>() {
+//            });
+//
+//            logger.info("[consume 수신] model : " + msg);
+//
+//        } catch (JsonProcessingException e) {
+//            logger.error(e.getMessage());
+//        }
+//        try {
+//            Thread.sleep(5000);
+//            System.out.println("5초 대기");
+//            acknowledgment.acknowledge();
+//        } catch (Exception e) {
+//            logger.error(e.getMessage());
+//        }
+//    }
 
 //    @KafkaListener(groupId = "DMS", topics = "top")
 //    public void consumeTopic(ConsumerRecord<String, String> record) {
@@ -99,4 +109,3 @@ public class DBConsumer {
 //            }
 //        }
 //    }
-}
