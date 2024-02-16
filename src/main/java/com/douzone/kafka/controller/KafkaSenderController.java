@@ -1,8 +1,5 @@
 package com.douzone.kafka.controller;
 
-//import com.douzone.kafka.producer.CallbackProducer;
-//import com.douzone.kafka.producer.Producer;
-
 import com.douzone.kafka.model.Result;
 import com.douzone.kafka.model.Student;
 import lombok.RequiredArgsConstructor;
